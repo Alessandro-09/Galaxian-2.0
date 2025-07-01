@@ -1,1 +1,1 @@
-# Galaxian-2.0
+# Galaxian
