@@ -38,6 +38,7 @@ public:
     
     int run(SystemResources& sys);
     void draw() const;
+    void printCollisionMetrics() const;
     int getCurrentScore() const;
 
 private:
@@ -56,6 +57,9 @@ private:
     ALLEGRO_BITMAP* explosionImg;
     ALLEGRO_BITMAP* livesSprite;
     std::vector<Star> stars;
+
+    int collisionChecks = 0;     // Contador de chequeos de colisión
+    double collisionTime = 0.0;  // Tiempo acumulado en chequeos
 
     // Variables miembro (antes estáticas)
     int nivel;                    // Nivel actual del juego
