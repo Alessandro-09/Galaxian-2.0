@@ -81,7 +81,9 @@ private:
 
    // Vector que contiene todas las estrellas del fondo
    std::vector<Star> stars;
-   
+
+  extern "C" int check_collision_arm(int x1, int y1, int w1, int h1,
+                                      int x2, int y2, int w2, int h2);
    // Funciones privadas para la lógica del juego
    void crearnivel();                              // Crea/inicializa un nuevo nivel
    void crearbala(int dy, int x, int y, SystemResources& sys);  // Crea una nueva bala
