@@ -1005,11 +1005,12 @@ void Game::dibujarnave() const
 // Actualiza el movimiento de la nave según la entrada del jugador
 void Game::actualizarNave(SystemResources& sys)
  {
-    // Verificar límites de la pantalla y detener movimiento si es necesario
-    if (nave->x + 30 > 900)    // Si llegó al borde derecho
-		derecha = false;
-	if (nave->x < 0)           // Si llegó al borde izquierdo
-		izquierda = false;
+// Verificar límites de la pantalla y detener movimiento si es necesario
+int limits = check_nave_limits(static_cast<int>(nave->x), 30, width); // o 900 si está fijo
+
+if (limits & 1) derecha = false;     // bit0
+if (limits & 2) izquierda = false;   // bit1
+
 		
     // Aplicar movimiento según las teclas presionadas
 	if (derecha)               // Mover a la derecha
