@@ -17,140 +17,115 @@
 
 using namespace std;
 
-// VARIABLES GLOBALES 
-// Variables que controlan el estado general del juego
-int nivel = 1;                    // Nivel actual del juego (comienza en 1)
-bool derecha = false;             // Flag para controlar si el jugador se mueve a la derecha
-bool izquierda = false;           // Flag para controlar si el jugador se mueve a la izquierda
-double tiempoUltimoAtaque = 0;    // Cronómetro para controlar cuándo los enemigos pueden atacar
+// Definición de estructuras
+struct Bala {
+    float x, y;
+    float velocidad;
+    Bala* siguiente;
+};
 
-// ESTRUCTURAS DEL JUEGO 
+struct personaje {
+    ALLEGRO_BITMAP* bitmap;
+    ALLEGRO_BITMAP* disparobitmap;
+    int ancho, alto;
+    float x, y;
+    double tiempo;
+    int vida;
+};
 
-// Estructura para representar las balas (tanto del jugador como de enemigos)
-typedef struct Bala {
-    float x, y;           // Posición de la bala en el espacio
-    float velocidad;      // Velocidad de movimiento (positiva hacia arriba, negativa hacia abajo)
-    Bala* siguiente;      // Puntero al siguiente elemento en la lista enlazada
-}*ptr_bala;
-
-// Estructura para representar la nave del jugador
-typedef struct personaje {
-    ALLEGRO_BITMAP* bitmap;        // Imagen normal de la nave
-    ALLEGRO_BITMAP* disparobitmap; // Imagen de la nave cuando dispara
-    int ancho, alto;               // Dimensiones de la nave
-    float x, y;                    // Posición actual de la nave
-    double tiempo;                 // Cronómetro para controlar animaciones
-    int vida;                      // Vidas restantes del jugador
-}*ptr_nave;
-
-// Estructura para representar las naves enemigas
-typedef struct navesenemigas {
-    ALLEGRO_BITMAP* bitmap;        // Imagen del enemigo
-    int col, fila;                 // Posición en la formación de enemigos (columna y fila)
-    float origenx, origeny;        // Posición original en la formación
-    int ancho, alto;               // Dimensiones del enemigo
-    float x, y;                    // Posición actual del enemigo
-    float dx, dy;                  // Velocidades de movimiento horizontal y vertical
-    int ataque;                    // Estado de ataque (0=patrullando, 1=atacando)
-    int estado;                    // Estado del comportamiento del enemigo
-    int Disparo;                   // Cantidad de disparos restantes
-    double Tiempo;                 // Cronómetro para controlar disparos
-    int salio = 0;                 // Flag para controlar si el enemigo salió de su posición
-    navesenemigas* Siguiente;      // Puntero al siguiente enemigo en la lista
-}*ptr_est;
-
-// LISTAS GLOBALES 
-// Listas enlazadas que manejan todos los elementos dinámicos del juego
-ptr_bala Balas = nullptr;         // Lista de todas las balas en pantalla
-ptr_est enemigos = nullptr;       // Lista de todos los enemigos activos
-ptr_nave nave = nullptr;          // Puntero a la nave del jugador
-
-// Array de imágenes compartidas para los diferentes tipos de enemigos
-ALLEGRO_BITMAP* enemy_bitmaps[4] = {nullptr};
+struct navesenemigas {
+    ALLEGRO_BITMAP* bitmap;
+    int col, fila;
+    float origenx, origeny;
+    int ancho, alto;
+    float x, y;
+    float dx, dy;
+    int ataque;
+    int estado;
+    int Disparo;
+    double Tiempo;
+    int salio;
+    navesenemigas* Siguiente;
+};
 
 // FUNCIONES AUXILIARES 
 
 // Agrega un nuevo enemigo al final de la lista de enemigos
-void agregaralfinal(ptr_est& lista, ptr_est Nuevo) {
+void Game::agregaralfinal(ptr_est& lista, ptr_est Nuevo) {
     ptr_est Aux = lista;
-    Nuevo->salio = 0;  // Inicializa el flag de salida
+    Nuevo->salio = 0;
     
-    if (Aux != NULL) {
-        // Recorre hasta el final de la lista
-        while (Aux->Siguiente != NULL) {
+    if (Aux != nullptr) {
+        while (Aux->Siguiente != nullptr) {
             Aux = Aux->Siguiente;
         }
-        // Conecta el nuevo enemigo al final
         Aux->Siguiente = Nuevo;
     } else {
-        // Si la lista está vacía, el nuevo elemento se convierte en el primero
         lista = Nuevo;
     }
 }
 
-// Agrega una nueva bala al final de la lista de balas
-void agregarBala(ptr_bala& lista, ptr_bala Nuevo) {
+void Game::agregarBala(ptr_bala& lista, ptr_bala Nuevo) {
     ptr_bala Aux = lista;
     
-    if (Aux != NULL) {
-        // Recorre hasta el final de la lista
-        while (Aux->siguiente != NULL) {
+    if (Aux != nullptr) {
+        while (Aux->siguiente != nullptr) {
             Aux = Aux->siguiente;
         }
-        // Conecta la nueva bala al final
         Aux->siguiente = Nuevo;
     } else {
-        // Si la lista está vacía, la nueva bala se convierte en la primera
         lista = Nuevo;
     }
 }
 
-// Elimina todos los enemigos de la lista y libera la memoria
-void limpiarenemigos() {
-    ptr_est aux = enemigos;
-    while (aux != nullptr) {
-        ptr_est temp = aux;
-        aux = aux->Siguiente;
-        delete temp;  // Libera la memoria del enemigo actual
-    }
-    enemigos = nullptr;  // Reinicia la lista
-}
-
-// Elimina todas las balas de la lista y libera la memoria
-void limpiarbalas() {
+void Game::limpiarbalas() {
     ptr_bala aux = Balas;
     while (aux != nullptr) {
         ptr_bala temp = aux;
         aux = aux->siguiente;
-        delete temp;  // Libera la memoria de la bala actual
+        delete temp;
     }
-    Balas = nullptr;  // Reinicia la lista
+    Balas = nullptr;
 }
 
-// Verifica si un enemigo puede atacar (no hay otros enemigos bloqueándolo por debajo)
-bool puedeAtacar(ptr_est e) {
+void Game::limpiarenemigos() {
     ptr_est aux = enemigos;
     while (aux != nullptr) {
-        // Comprueba si hay otro enemigo en una fila inferior que lo bloquee
+        ptr_est temp = aux;
+        aux = aux->Siguiente;
+        delete temp;
+    }
+    enemigos = nullptr;
+}
+
+bool Game::puedeAtacar(ptr_est e) {
+    ptr_est aux = enemigos;
+    while (aux != nullptr) {
         if (aux != e &&
             aux->x < e->x + 30 && aux->x + 30 > e->x &&
             aux->fila > e->fila) {
-            return false;  // Está bloqueado
+            return false;
         }
         aux = aux->Siguiente;
     }
-    return true;  // Puede atacar libremente
+    return true;
 }
 
 // IMPLEMENTACIÓN DE LA CLASE GAME
 
-// Constructor: Inicializa todos los componentes del juego
+// Constructor - inicializa todas las variables miembro
 Game::Game(ALLEGRO_FONT* font, int width, int height) 
     : font(font), smallFont(nullptr), width(width), height(height), 
       currentScore(0), highScore(0), gameOver(false), showExplosion(false),
       explosionTimer(0.0f), gameOverTimer(0.0f), starSpeed(1.0f),
       speedMultiplier(1.0f), elapsedTime(0.0f), explosionImg(nullptr),
-      livesSprite(nullptr) {
+      livesSprite(nullptr), nivel(1), derecha(false), izquierda(false),
+      tiempoUltimoAtaque(0.0), Balas(nullptr), enemigos(nullptr), nave(nullptr) {
+    
+    // Inicializar array de bitmaps
+    for (int i = 0; i < 4; ++i) {
+        enemy_bitmaps[i] = nullptr;
+    }
 
     // Cargar las imágenes de los diferentes tipos de enemigos
     enemy_bitmaps[0] = al_load_bitmap("pictures/navenemiga1.png");
@@ -706,7 +681,7 @@ void Game::colisiones(SystemResources& sys) {
         bool colision = false;
 
         while (enemigo != nullptr && !colision) {
-            // Llamada a la función de ensamblador
+            // Llamada a la función de ensamblador para detección de colisiones
             int collision = check_collision_arm(
                 static_cast<int>(aux->x), static_cast<int>(aux->y), 4, 10,
                 static_cast<int>(enemigo->x), static_cast<int>(enemigo->y), 30, 30
@@ -753,7 +728,75 @@ void Game::colisiones(SystemResources& sys) {
         }
     }
 
-    // ... (resto de la función colisiones original)
+    // COLISIONES ENTRE BALAS ENEMIGAS Y LA NAVE DEL JUGADOR
+    aux = Balas;
+    aux2 = nullptr;
+    bool colision = false;
+
+    while (aux != nullptr)
+    {
+        // Verifica si una bala enemiga impacta la nave del jugador
+        if (!(aux->x + 30 < nave->x || aux->x > nave->x + 30 ||
+            aux->y+15 < nave->y || aux->y > nave->y+15 ))
+        {
+            // Reproducir sonido de impacto en el jugador
+            if (sys.hitPlayerSound) {
+                al_play_sample(sys.hitPlayerSound, 1.5f, 0.0f, 1.0f, ALLEGRO_PLAYMODE_ONCE, nullptr);
+            }
+
+            // Eliminar la bala que impactó
+            ptr_bala borrar = aux;
+            if (aux2 == nullptr)
+                Balas = aux->siguiente;
+            else
+                aux2->siguiente = aux->siguiente;
+
+            aux = borrar->siguiente;
+            delete borrar;
+            nave->vida -= 1;    // Reducir vida del jugador
+            colision = true;
+            cout << "colision" << std::endl;
+            continue; // Saltar incremento de aux2 ya que eliminamos la bala
+        }
+
+        aux2 = aux;
+        aux = aux->siguiente;
+    }
+
+    // COLISIONES DIRECTAS ENTRE ENEMIGOS Y LA NAVE 
+    ptr_est enemigo = enemigos;
+    ptr_est enemigo2 = nullptr;
+
+    while (enemigo != nullptr && !colision)
+    {
+        // Verifica si un enemigo toca directamente la nave
+        if (!(enemigo->x + 30 < nave->x || enemigo->x > nave->x + 30 ||
+            enemigo->y + 30 < nave->y || enemigo->y > nave->y + 30))
+        {
+            // Reproducir sonido de impacto
+            if (sys.hitPlayerSound) {
+                al_play_sample(sys.hitPlayerSound, 1.5f, 0.0f, 1.0f, ALLEGRO_PLAYMODE_ONCE, nullptr);
+            }
+            
+            cout << "colision" << std::endl;
+            nave->vida -= 1;    // Reducir vida del jugador
+            
+            // Eliminar el enemigo que colisionó
+            ptr_est eliminar = enemigo;
+            if (enemigo2 == nullptr)
+                enemigos = enemigo->Siguiente;
+            else
+                enemigo2->Siguiente = enemigo->Siguiente;
+
+            enemigo = eliminar->Siguiente;
+            delete eliminar;
+        }
+        else
+        {
+            enemigo2 = enemigo;
+            enemigo = enemigo->Siguiente;
+        }
+    }
 }
 
 // Actualiza el comportamiento y movimiento de todos los enemigos
@@ -1040,11 +1083,11 @@ void Game::actualizarbala(SystemResources& sys)
 void Game::generateStars() {
     stars.clear();
     for (int i = 0; i < 300; ++i) {
-        stars.emplace_back(
+        stars.push_back(Star(
             static_cast<float>(rand() % width),    // Posición X aleatoria
             static_cast<float>(rand() % height),   // Posición Y aleatoria
             rand() % 3 // Tipo de estrella: 0=azul, 1=roja, 2=amarilla
-        );
+        ));
     }
 }
 
