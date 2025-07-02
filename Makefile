@@ -1,29 +1,39 @@
 # Project settings
 CXX := g++
+AS := as
 EXEC := main
 SRC_DIR := src
 INC_DIR := include
 OBJ_DIR := obj
 
-# Find all source files and convert to object files
+# Source files
 SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+ASMS := $(wildcard $(SRC_DIR)/*.s)
 OBJS := $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
+AOBJS := $(patsubst $(SRC_DIR)/%.s, $(OBJ_DIR)/%.o, $(ASMS))
 
 # Compiler flags
 CXXFLAGS := -Wall -std=c++17 -I$(INC_DIR)
-LDFLAGS := -lallegro -lallegro_font -lallegro_ttf -lallegro_primitives -lallegro_image -lallegro_audio -lallegro_acodec -lallegro_dialog
+ASFLAGS := -mfpu=neon -march=armv7-a
+LDFLAGS := -lallegro -lallegro_font -lallegro_ttf -lallegro_primitives \
+           -lallegro_image -lallegro_audio -lallegro_acodec -lallegro_dialog
 
 # Default target
 all: $(EXEC)
 
 # Link the executable
-$(EXEC): $(OBJS)
+$(EXEC): $(OBJS) $(AOBJS)
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
-# Compile source files to object files
+# Compile C++ source files
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Compile assembly files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.s
+	@mkdir -p $(OBJ_DIR)
+	$(AS) $(ASFLAGS) $< -o $@
 
 # Run the executable
 run: $(EXEC)
