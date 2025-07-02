@@ -63,35 +63,3 @@ end_collision_check:
     pop {r4-r6, pc}
 
 .size check_collision_arm, .-check_collision_arm
-
-/* 
- * Función: check_nave_limits
- * Parámetros:
- *   r0 - x     (posición X de la nave)
- *   r1 - width (ancho de la nave, normalmente 30)
- *   r2 - screen_width (ancho de la pantalla, normalmente 900)
- * Retorno:
- *   r0 - flags: bit0=1 si nave sale por la derecha, bit1=1 si nave sale por la izquierda
- */
-.global check_nave_limits
-.type check_nave_limits, %function
-check_nave_limits:
-    push {lr}
-    mov r3, r0      /* r3 = x */
-
-    add r4, r3, r1  /* r4 = x + width */
-    mov r0, #0      /* r0 = flags */
-
-    cmp r4, r2      /* x+width > screen_width? */
-    ble not_right
-    orr r0, r0, #1  /* set bit0 */
-not_right:
-
-    cmp r3, #0      /* x < 0? */
-    bge not_left
-    orr r0, r0, #2  /* set bit1 */
-not_left:
-
-    pop {pc}
-.size check_nave_limits, .-check_nave_limits
-

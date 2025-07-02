@@ -672,6 +672,9 @@ void Game::crearnivel() {
 
 // Maneja todas las colisiones del juego
 void Game::colisiones(SystemResources& sys) {
+
+    double start = al_get_time();
+
     ptr_bala aux = Balas;
     ptr_bala aux2 = nullptr;
  
@@ -681,6 +684,7 @@ void Game::colisiones(SystemResources& sys) {
         bool colision = false;
 
         while (enemigo != nullptr && !colision) {
+            collisionChecks++;
             // Llamada a la función de ensamblador para detección de colisiones
             int collision = check_collision_arm(
                 static_cast<int>(aux->x), static_cast<int>(aux->y), 4, 10,
@@ -797,6 +801,7 @@ void Game::colisiones(SystemResources& sys) {
             enemigo = enemigo->Siguiente;
         }
     }
+    collisionTime += al_get_time() - start;
 }
 
 // Actualiza el comportamiento y movimiento de todos los enemigos
@@ -1005,12 +1010,11 @@ void Game::dibujarnave() const
 // Actualiza el movimiento de la nave según la entrada del jugador
 void Game::actualizarNave(SystemResources& sys)
  {
-// Verificar límites de la pantalla y detener movimiento si es necesario
-int limits = check_nave_limits(static_cast<int>(nave->x), 30, width); // o 900 si está fijo
-
-if (limits & 1) derecha = false;     // bit0
-if (limits & 2) izquierda = false;   // bit1
-
+    // Verificar límites de la pantalla y detener movimiento si es necesario
+    if (nave->x + 30 > 900)    // Si llegó al borde derecho
+		derecha = false;
+	if (nave->x < 0)           // Si llegó al borde izquierdo
+		izquierda = false;
 		
     // Aplicar movimiento según las teclas presionadas
 	if (derecha)               // Mover a la derecha
@@ -1246,6 +1250,15 @@ void Game::draw() const {
     al_flip_display(); // Mostrar todo en pantalla
 }
 
+void Game::printCollisionMetrics() const {
+    std::cout << "\nMétricas de Colisiones:\n";
+    std::cout << "Total chequeos: " << collisionChecks << "\n";
+    std::cout << "Tiempo total: " << collisionTime * 1000 << " ms\n";
+    std::cout << "μs por chequeo: " 
+              << (collisionChecks > 0 ? (collisionTime * 1000000 / collisionChecks) : 0)
+              << " μs\n";
+}
+
 // Bucle principal del juego
 int Game::run(SystemResources& sys) {
     ALLEGRO_EVENT event;
@@ -1328,6 +1341,8 @@ int Game::run(SystemResources& sys) {
             draw();       // Dibujar todo en pantalla
         }
     }
+
+    printCollisionMetrics();
 
     return 0; // Retornar código de salida
 }
